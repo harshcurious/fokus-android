@@ -1,0 +1,29 @@
+# Built artifacts & Gradle
+*.iml
+.gradle/
+build/
+**/build/
+.kotlin/
+
+# Local configuration & Secrets
+local.properties
+*.jks
+*.keystore
+*.pepk
+
+# Android Studio / IntelliJ IDEA
+.idea/
+
+# Native build / NDK
+.externalNativeBuild/
+.cxx/
+
+# Profiling & Captures
+/captures/
+*.hprof
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+

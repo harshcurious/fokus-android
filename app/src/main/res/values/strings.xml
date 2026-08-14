@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fokus</string>
+
+    <!-- Notification channels -->
+    <string name="channel_timer">Timer</string>
+    <string name="channel_events">Session events</string>
+
+    <!-- Persistent notification + timer screen captions -->
+    <string name="status_idle">Ready when you are</string>
+    <string name="status_focus">Focus %1$d of %2$d — %3$s left</string>
+    <string name="status_short_break">Short break — %1$s left</string>
+    <string name="status_long_break">Long break — %1$s left</string>
+    <string name="status_paused">Paused — %1$s left</string>
+    <string name="status_overtime">Break over — %1$s over</string>
+
+    <string name="caption_idle">Tap start when you are ready</string>
+    <string name="caption_focus">Focus %1$d of %2$d</string>
+    <string name="caption_short_break">Short break</string>
+    <string name="caption_long_break">Long break</string>
+    <string name="caption_paused">Paused</string>
+    <string name="caption_overtime">Break overrun</string>
+
+    <!-- Actions -->
+    <string name="action_start">Start</string>
+    <string name="action_start_focus">Start focus</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_postpone">Postpone</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_back">Back</string>
+
+    <!-- Transition event notifications -->
+    <string name="event_break_started_title">Focus complete</string>
+    <string name="event_break_started_text">Break time — step away from the screen.</string>
+    <string name="event_break_over_title">Break over</string>
+    <string name="event_break_over_text">Time to get back to focus.</string>
+    <string name="event_focus_started_title">Focus started</string>
+    <string name="event_focus_started_text">Back to work — focus time.</string>
+
+    <!-- Overlay -->
+    <string name="overlay_caption_short_break">Short break</string>
+    <string name="overlay_caption_long_break">Long break</string>
+    <string name="overlay_caption_overtime">Break over — back to it</string>
+    <string name="overlay_home_hint">The break keeps counting into the negative until you start focus.</string>
+
+    <!-- Permission cards -->
+    <string name="permission_overlay_explain">To cover the screen during breaks, Fokus needs permission to display over other apps.</string>
+    <string name="permission_overlay_action">Grant</string>
+    <string name="permission_notifications_explain">Notifications show the countdown and warn you when a session ends.</string>
+    <string name="permission_notifications_action">Allow</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_durations">Session lengths</string>
+    <string name="settings_focus_length">Focus</string>
+    <string name="settings_short_break">Short break</string>
+    <string name="settings_long_break">Long break</string>
+    <string name="settings_postpone">Postpone length</string>
+    <string name="settings_sessions_per_cycle">Focus sessions per cycle</string>
+    <string name="settings_auto_start">Start focus on screen unlock</string>
+    <string name="settings_auto_start_explain">Unlocking the phone starts a focus session when the timer is idle.</string>
+    <string name="settings_auto_start_focus_after_break">Auto-start focus after break</string>
+    <string name="settings_auto_start_focus_after_break_explain">When a break ends, the next focus session starts automatically.</string>
+    <string name="settings_battery_explain">For a reliable countdown, exclude Fokus from battery optimizations.</string>
+    <string name="settings_battery_action">Exclude</string>
+</resources>
