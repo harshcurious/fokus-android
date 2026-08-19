@@ -19,8 +19,8 @@ overlay, and can automatically start focus when you unlock your phone.
 - **Postpone** — during a break, abort it and go back to focus for the
   configured postpone length. When that time is up, the same break returns.
 - **Skip** — jump to the next session. Skipping a running focus session starts
-  its break immediately; skipping a break cues the next focus session without
-  starting it.
+  its break immediately; skipping a break starts the next focus when *Auto-start
+  focus after break* is enabled, otherwise it cues the next focus session.
 - **Pause / resume** — pause a running session; resume continues from where it
   left off.
 - **Stop** — reset the cycle to idle.
@@ -37,6 +37,9 @@ overlay, and can automatically start focus when you unlock your phone.
   saved before a reboot, or older than one hour, are discarded. The service
   restarts automatically after boot so the screen-unlock auto-start keeps
   working.
+
+See [the complete timer flow diagram](docs/timer-flow.md) for all engine,
+service, UI, notification, unlock, and persistence paths.
 
 ## Defaults
 

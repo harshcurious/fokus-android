@@ -44,8 +44,9 @@ See `TimerEngine.kt` for the source of truth.
   - `start()` — start idle, resume paused, or finish overtime and begin next focus.
   - `pause()` — freeze running session.
   - `skip()` — advance to next session. Skipping a running focus session starts
-    its break immediately; skipping a break cues the next focus session without
-    starting it.
+    its break immediately; skipping a break starts the next focus when
+    `autoStartFocusAfterBreak` is enabled, otherwise it cues the next focus
+    session without starting it.
   - `postpone()` — only during a break/overtime; returns to focus for
     `postponeMinutes`, then the same break returns.
   - `stop()` — resets to idle.

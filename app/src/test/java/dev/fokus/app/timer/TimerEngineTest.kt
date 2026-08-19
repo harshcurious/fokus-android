@@ -135,6 +135,22 @@ class TimerEngineTest {
     }
 
     @Test
+    fun `skip during break starts the next focus when auto-start is enabled`() {
+        val e = engine()
+        e.autoStartFocusAfterBreak = true
+        e.start()
+        now += 25 * 60 * 1000L
+        e.tick() // break running
+        e.skip()
+        val s = e.snapshot()
+        assertEquals(TimerEngine.Phase.FOCUS, s.phase)
+        assertTrue(s.running)
+        assertFalse(s.overtime)
+        assertEquals(2, s.focusIndex)
+        assertEquals(25 * 60 * 1000L, s.remainingMs)
+    }
+
+    @Test
     fun `skip during overtime clears the overtime and cues focus`() {
         val e = engine()
         e.start()

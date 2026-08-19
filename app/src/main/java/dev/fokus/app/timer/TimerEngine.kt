@@ -12,9 +12,10 @@ package dev.fokus.app.timer
  *    ("overtime") until the user starts the next focus session, or, when
  *    [autoStartFocusAfterBreak] is enabled, automatically starts the next focus
  *    session.
- *  - [skip] jumps to the next session of the cycle; [postpone] aborts a break and
- *    goes back to focus for [Durations.postponeMinutes], after which the break
- *    returns.
+ *  - [skip] jumps to the next session of the cycle; when
+ *    [autoStartFocusAfterBreak] is enabled, skipping a break starts the next focus;
+ *    [postpone] aborts a break and goes back to focus for [Durations.postponeMinutes],
+ *    after which the break returns.
  *  - All countdowns derive from a wall-clock deadline, so locking the screen or the
  *    process being frozen does not change when a session ends.
  */
@@ -156,15 +157,22 @@ class TimerEngine(private val clock: () -> Long = System::currentTimeMillis) {
         paused = true
     }
 
-    /** Advance to the next session of the cycle. Skipping a break leaves the next
-     *  focus cued but not running; skipping a focus starts its break immediately. */
+    /** Advance to the next session of the cycle. Skipping a break starts the next
+     *  focus when [autoStartFocusAfterBreak] is enabled; otherwise it leaves it cued.
+     *  Skipping a focus starts its break immediately. */
     fun skip(now: Long = clock()) {
         if (stateVal == 0) return
+        val skippingBreak = phaseFor(stateVal) != Phase.FOCUS
         stateVal = nextState(stateVal)
         overtime = false
         paused = false
         if (phaseFor(stateVal) == Phase.FOCUS) {
-            running = false
+            if (skippingBreak && autoStartFocusAfterBreak) {
+                running = true
+                deadlineMs = now + plannedSecondsFor(stateVal) * 1000L
+            } else {
+                running = false
+            }
         } else {
             running = true
             deadlineMs = now + plannedSecondsFor(stateVal) * 1000L
