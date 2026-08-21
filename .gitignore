@@ -27,3 +27,5 @@ local.properties
 Thumbs.db
 ehthumbs.db
 
+.vscode/
+.vscode/

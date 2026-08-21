@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lesson 0001 · The map of the app — Fokus lessons</title>
+  <link rel="stylesheet" href="../assets/fokus.css">
+  <script src="../assets/quiz.js" defer></script>
+</head>
+<body>
+  <main class="lesson">
+    <header class="masthead">
+      <p class="series">Fokus lessons · Lesson 0001</p>
+      <h1>The map of the app</h1>
+      <p class="subtitle">How fokus-android is organized, and the single mental model that explains all of it: <em>events flow down, state flows up.</em></p>
+    </header>
+
+    <div class="callout">
+      <span class="label">Your win after this lesson</span>
+      <p>You can open this repo, name every piece of it, say what each piece does, and trace one button tap from the screen through the service into the timer engine and back. Everything else — Compose, services, persistence — will hang off this one picture.</p>
+    </div>
+
+    <h2>1 · An Android app is a set of OS-managed components</h2>
+
+    <p>In a language like Python or JavaScript, a program has one entry point and runs top to bottom. An Android app is different: it is a <em>bundle of components</em> that the operating system can start and stop on its own — when you open the app, when the phone reboots, when a notification is tapped. The OS needs a map of these components, and that map is <code>AndroidManifest.xml</code>.</p>
+
+    <p>Open it now: <code>app/src/main/AndroidManifest.xml</code>. Every app ships one, and it is always worth reading first, because it tells you what the app <em>is</em> to the system:</p>
+
+    <div class="filecard"><span class="path">app/src/main/AndroidManifest.xml</span><span class="what">The app's contract with the OS.</span></div>
+
+    <p>It declares <strong>three components</strong> and the <strong>permissions</strong> they need:</p>
+
+    <ul>
+      <li><strong>MainActivity</strong> (line 19) — the launcher screen. Its <code>intent-filter</code> with <code>MAIN</code>/<code>LAUNCHER</code> tells Android "this is the screen to show when the user taps the app icon."</li>
+      <li><strong>FokusService</strong> (line 28) — background work with no UI. It is the heart of the app, keeping the countdown alive.</li>
+      <li><strong>BootReceiver</strong> (line 37) — a listener that gets woken up after a reboot and restarts the service.</li>
+    </ul>
+
+    <p>The permissions (lines 4–9) are capabilities the app is requesting: show notifications (<code>POST_NOTIFICATIONS</code>), draw over other apps (<code>SYSTEM_ALERT_WINDOW</code>), run as a foreground service, and so on.</p>
+
+    <div class="callout">
+      <span class="label">Key idea</span>
+      <p>An Android app is not one program — it is a set of <strong>entry points</strong> the system can invoke. The manifest is the list. Reading the manifest first is the fastest way to learn what any app does.</p>
+    </div>
+
+    <h2>2 · The layered picture of Fokus</h2>
+
+    <p>Inside the components, the code is arranged in layers, from the screen down to the pure logic. This matches the pattern the official architecture guide recommends (<a href="https://developer.android.com/topic/architecture">developer.android.com/topic/architecture</a>): a UI layer, state holders, and a data layer with the business logic.</p>
+
+    <pre class="flow">┌──────────────────────────────────────────────────────────────────┐
+│  UI layer   TimerScreen.kt  ·  SettingsScreen.kt  ·  TimerFace.kt │
+│             (Jetpack Compose — screens read state, send events)  │
+└───────────────────────────────┬──────────────────────────────────┘
+                                │ binds + observes
+┌───────────────────────────────▼──────────────────────────────────┐
+│  State holder  TimerViewModel.kt                                 │
+│                (bridges UI ↔ service; reads SettingsRepository)  │
+└───────────────────────────────┬──────────────────────────────────┘
+                                │ bound service (Binder)
+┌───────────────────────────────▼──────────────────────────────────┐
+│  Service  FokusService.kt  — foreground, sticky, owns:           │
+│            · tick loop (delay 250 ms)                            │
+│            · persistent notification · break overlay             │
+│            · session persistence (SharedPreferences)             │
+└───────────────────────────────┬──────────────────────────────────┘
+                                │ drives
+┌───────────────────────────────▼──────────────────────────────────┐
+│  Pure logic  TimerEngine.kt  — the Pomodoro state machine        │
+│              (no Android imports; injected clock → unit-tested)  │
+└──────────────────────────────────────────────────────────────────┘
+
+Side branches:
+  SettingsRepository.kt — DataStore-backed settings (exposed as a Flow)
+  OverlayController.kt — full-screen break overlay via WindowManager
+  BootReceiver.kt      — restarts the service after reboot</pre>
+
+    <p>The interesting design choice: <strong>the engine is plain Kotlin with no Android dependency</strong> (<code>app/src/main/java/dev/fokus/app/timer/TimerEngine.kt:1</code>). It even takes its clock as a parameter — <code>clock: () -&gt; Long</code> — so tests can control time. That is why the repo can unit-test the entire Pomodoro behavior on a JVM without a phone: <code>app/src/test/java/dev/fokus/app/timer/TimerEngineTest.kt</code>.</p>
+
+    <p>This layering is a deliberate, learnable pattern: keep the <em>rules</em> pure and testable, wrap them in Android machinery, and let state flow out to whoever needs it.</p>
+
+    <h2>3 · Trace: what happens when you tap “Start”</h2>
+
+    <p>Here is the payoff. Follow one tap through the whole app. The files, in order:</p>
+
+    <div class="filecard"><span class="path">TimerScreen.kt:188</span><span class="what">The Start button. <code>onClick = onStart</code> → <code>viewModel.start()</code>.</span></div>
+    <div class="filecard"><span class="path">TimerViewModel.kt:66</span><span class="what"><code>fun start() = service?.startFocus()</code> — forwards the event to the bound service.</span></div>
+    <div class="filecard"><span class="path">FokusService.kt:210</span><span class="what"><code>startFocus() = dispatch { engine.start() }</code> — the service owns the engine.</span></div>
+    <div class="filecard"><span class="path">TimerEngine.kt:130</span><span class="what"><code>start()</code> — sets <code>running = true</code> and <code>deadlineMs = now + focus length</code>.</span></div>
+
+    <p>Then the state must come back <em>up</em>:</p>
+
+    <div class="filecard"><span class="path">FokusService.kt:232</span><span class="what"><code>publish()</code> — <code>_state.value = engine.snapshot()</code>; the service's <code>StateFlow&lt;Snapshot&gt;</code> updates.</span></div>
+    <div class="filecard"><span class="path">TimerViewModel.kt:45</span><span class="what">A coroutine <code>collect</code>s the service state into the ViewModel's own <code>_snapshot</code>.</span></div>
+    <div class="filecard"><span class="path">TimerScreen.kt:57</span><span class="what"><code>val snapshot by viewModel.snapshot.collectAsState()</code> — Compose re-renders with the new time.</span></div>
+
+    <p>And meanwhile, a <strong>tick loop</strong> keeps the clock moving: a coroutine in the service calls <code>engine.tick()</code> every 250&nbsp;ms (<code>FokusService.kt:141</code>). When a session's deadline passes, <code>tick</code> returns an <em>event</em> — break started, focus started, overtime began — and the service turns events into notifications and state updates.</p>
+
+    <pre class="flow">tap "Start"
+   │  (event, downward)
+   ▼
+TimerScreen ──▶ TimerViewModel ──▶ FokusService ──▶ TimerEngine.start()
+                                                       │ sets deadline
+                                                       ▼
+                          tick loop (every 250 ms) ──▶ TimerEngine.tick()
+                                                       │ deadline passed?
+                                                       ▼
+                                state: StateFlow&lt;Snapshot&gt;  (state, upward)
+   │
+   ▼
+TimerScreen recomposes ──▶ dial shows 25:00 ──▶ … and 24:59 next second</pre>
+
+    <div class="callout">
+      <span class="label">Key idea</span>
+      <p><strong>Events flow down, state flows up.</strong> User actions travel down through ViewModel and service into the engine; the engine's <code>Snapshot</code> flows back up through the same layers, and any screen observing it updates itself. Nothing mutates state from the UI directly.</p>
+    </div>
+
+    <h2>4 · Do it yourself (2 minutes)</h2>
+
+    <p>Strengthen the map in your head — no coding, just reading. In an editor, open these and confirm the claims:</p>
+
+    <ol>
+      <li><code>FokusService.kt:232</code> — find <code>publish()</code> and see that it sets <code>_state.value</code> and toggles the overlay.</li>
+      <li><code>TimerEngine.kt:113</code> — find <code>snapshot()</code>; notice it derives everything from <code>stateVal</code>, <code>deadlineMs</code>, and the durations. That is the single source of truth.</li>
+      <li><code>TimerViewModel.kt:54</code> — find <code>init</code>: the ViewModel starts the service and binds to it the moment it's created.</li>
+    </ol>
+
+    <h2>5 · Check your understanding</h2>
+
+    <div class="quiz" data-title="The map of the app — 3 questions">
+      <p class="quiz-title">The map of the app</p>
+
+      <div class="q" data-why="The manifest is the OS's map of your app; a component the manifest doesn't declare cannot be started.">
+        <p class="q-text">1. Where must every Activity, Service, and Receiver be declared?</p>
+        <div class="options">
+          <button class="option" data-correct>The AndroidManifest.xml file</button>
+          <button class="option">The build.gradle.kts file</button>
+          <button class="option">The MainActivity.kt class</button>
+          <button class="option">The Theme.kt package file</button>
+        </div>
+        <p class="feedback"><span class="verdict"></span><span class="why"></span></p>
+      </div>
+
+      <div class="q" data-why="The engine is the single source of truth; the service and ViewModel only mirror its snapshots.">
+        <p class="q-text">2. Which piece of Fokus owns all timer state?</p>
+        <div class="options">
+          <button class="option">FokusService, the foreground one</button>
+          <button class="option" data-correct>TimerEngine, pure and UI-free</button>
+          <button class="option">TimerViewModel, the state holder</button>
+          <button class="option">TimerScreen, the compose screen</button>
+        </div>
+        <p class="feedback"><span class="verdict"></span><span class="why"></span></p>
+      </div>
+
+      <div class="q" data-why="That's unidirectional data flow: user events flow into the logic, and fresh state flows back out to re-render the UI.">
+        <p class="q-text">3. Tap → engine changes state → UI re-renders. What is this called?</p>
+        <div class="options">
+          <button class="option" data-correct>Events down, state flows up</button>
+          <button class="option">State down, events flow up</button>
+          <button class="option">Both ways, simultaneous sync</button>
+          <button class="option">UI polls the engine clock</button>
+        </div>
+        <p class="feedback"><span class="verdict"></span><span class="why"></span></p>
+      </div>
+
+      <p class="score"></p>
+      <button class="reset">Reset quiz</button>
+    </div>
+
+    <h2>6 · Read the source of truth</h2>
+
+    <p>Read the official <strong>App fundamentals</strong> page — it covers the four components and the manifest in exactly the terms this lesson used. It is the primary source for the whole course.</p>
+
+    <div class="source">
+      <span class="label">Primary source</span>
+      <a href="https://developer.android.com/guide/components/fundamentals">Application fundamentals — developer.android.com</a>
+      <p>The canonical explanation of Activities, Services, Broadcast receivers, Content providers, and the manifest. Read at least the sections on app components and the manifest file.</p>
+    </div>
+
+    <p>Optional follow-up: the <a href="https://developer.android.com/topic/architecture">Guide to app architecture</a>, which explains <em>why</em> apps are layered the way Fokus is.</p>
+
+    <h2>7 · Where this leaves you</h2>
+
+    <p>You now have the map. The next lessons hang off it:</p>
+
+    <ul>
+      <li><strong>Lesson 0002 — the timer engine</strong>: the pure state machine (<code>stateVal</code>, deadlines, events) and how its tests prove it.</li>
+      <li><strong>Lesson 0003 — the service layer</strong>: foreground services, notifications, and the tick loop.</li>
+    </ul>
+
+    <p>Unknown words you met here are in the <a href="../reference/0001-android-glossary.html">Android &amp; Kotlin glossary</a>.</p>
+
+    <div class="review-prompt">
+      <strong>Your teacher is right here.</strong> Ask follow-up questions — “why is the overlay a separate controller?”, “what does <code>StateFlow</code> guarantee?”, “what happens on rotation?” — and we'll go deeper or slow down.<br>
+      <span class="hide-print">Also tell me what confused you; the next lesson is built to your level.</span>
+    </div>
+
+    <nav class="lesson-nav">
+      <span class="muted">Start of course</span>
+      <a href="../reference/0001-android-glossary.html">Reference: Glossary →</a>
+    </nav>
+
+    <footer class="footer">
+      Fokus lessons · Lesson 0001 · Reading time ≈ 10 minutes
+    </footer>
+  </main>
+</body>
+</html>

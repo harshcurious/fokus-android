@@ -1,0 +1,407 @@
+/* ==========================================================================
+   Fokus lessons — shared stylesheet
+   Tufte-inspired: warm paper, serif body, crisp code, generous whitespace.
+   Link from every lesson: <link rel="stylesheet" href="../assets/fokus.css">
+   ========================================================================== */
+
+:root {
+  --paper: #fffff8;
+  --ink: #1a1a17;
+  --ink-soft: #5c5c50;
+  --accent: #9c3b2e;          /* rust — the fokus color */
+  --accent-soft: #f4e6e2;
+  --line: #e3e0d3;
+  --code-bg: #f6f5ec;
+  --chip-bg: #eef1ea;
+  --ok: #2e6b3f;
+  --ok-bg: #e7f0e8;
+  --bad: #9c3b2e;
+  --bad-bg: #f7e8e6;
+  --serif: "Charter", "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+  --sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "Berkeley Mono", "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.lesson {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 6rem;
+}
+
+/* ---- masthead ---- */
+
+.masthead {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.masthead .series {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.6rem;
+}
+
+.masthead h1 {
+  font-size: 2.2rem;
+  line-height: 1.15;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.01em;
+}
+
+.masthead .subtitle {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-nav a { color: var(--accent); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .muted { color: var(--ink-soft); }
+
+/* ---- typography ---- */
+
+h2 {
+  font-size: 1.35rem;
+  margin: 2.6rem 0 0.8rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+h3 { font-size: 1.05rem; margin: 1.8rem 0 0.5rem; }
+
+p { margin: 0.7rem 0; }
+
+strong { font-weight: 700; }
+
+a { color: var(--accent); }
+
+ul, ol { margin: 0.7rem 0; padding-left: 1.4rem; }
+li { margin: 0.3rem 0; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.06em 0.3em;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ---- figures & callouts ---- */
+
+.fig {
+  margin: 1.6rem 0;
+  text-align: center;
+}
+
+.fig .caption {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+/* diagram pre: the ASCII flow drawings */
+pre.flow {
+  background: var(--chip-bg);
+  border: 1px solid var(--line);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 0.9rem 1.1rem;
+  border-radius: 0 6px 6px 0;
+  margin: 1.4rem 0;
+}
+
+.callout .label {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.callout p:first-of-type { margin-top: 0; }
+.callout p:last-of-type { margin-bottom: 0; }
+
+.source {
+  background: var(--chip-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin: 1.4rem 0;
+  font-size: 0.92rem;
+}
+
+.source .label {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+/* file reference card: a single source file with a one-line "what it is" */
+.filecard {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  margin: 0.5rem 0;
+  background: var(--paper);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.8rem;
+}
+
+.filecard .path {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.filecard .what { font-size: 0.92rem; color: var(--ink-soft); }
+
+/* ---- glossary ---- */
+
+.glossary {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+.glossary th {
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink);
+  padding: 0.5rem 0.6rem;
+}
+
+.glossary td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  vertical-align: top;
+}
+
+.glossary td:first-child {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  color: var(--accent);
+  width: 28%;
+}
+
+/* ---- quiz ---- */
+
+.quiz {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1.4rem 1.5rem;
+  margin: 1.8rem 0;
+  background: var(--paper);
+}
+
+.quiz .quiz-title {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.quiz .q { margin: 1.2rem 0; }
+
+.quiz .q:first-of-type { margin-top: 0; }
+
+.quiz .q-text {
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.quiz .options {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.quiz .option {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.quiz .option:hover:not(:disabled) { border-color: var(--accent); }
+
+.quiz .option.correct {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.quiz .option.wrong {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+}
+
+.quiz .option:disabled { cursor: default; opacity: 1; }
+
+.quiz .feedback {
+  display: none;
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  font-family: var(--sans);
+  color: var(--ink-soft);
+}
+
+.quiz .q.answered .feedback { display: block; }
+
+.quiz .q.answered .feedback .why { color: var(--ok); font-weight: 600; }
+
+.quiz .q.answered.correct .feedback .verdict::after { content: " ✓"; }
+.quiz .q.answered.wrong .feedback .verdict::after { content: " ✗"; }
+
+.quiz .score {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--line);
+}
+
+.quiz .reset {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.3rem 0.7rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  margin-top: 0.6rem;
+}
+
+.quiz .reset:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- misc ---- */
+
+.kbd {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+  background: var(--chip-bg);
+}
+
+.review-prompt {
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin-top: 3rem;
+  padding: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.review-prompt a { color: var(--accent); }
+
+.footer {
+  margin-top: 4rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+/* ---- print ---- */
+
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .lesson { max-width: 100%; padding: 0; }
+  pre.flow, pre, .callout, .source, .quiz, .filecard {
+    background: #fff;
+    border-color: #999;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .quiz .option.correct { background: #e7f0e8; }
+  .quiz .option.wrong { background: #f7e8e6; }
+  .lesson-nav, .review-prompt .hide-print { display: none; }
+  a { color: inherit; text-decoration: none; }
+}

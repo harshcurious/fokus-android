@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>timer-flow</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      min-width: 200px;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .mermaid-card {
+      position: relative;
+      width: 100%;
+      height: 550px;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      background: #0d1117;
+      margin: 24px 0;
+      overflow: hidden;
+      resize: vertical;
+    }
+    .mermaid-card .mermaid-stage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mermaid-card svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+    }
+    .mermaid-toolbar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      background: rgba(22, 27, 34, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    .mermaid-toolbar button {
+      font-size: 12px;
+      line-height: 1;
+      padding: 6px 10px;
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .mermaid-toolbar button:hover {
+      background: #30363d;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body class="markdown-body">
+  <h1>Timer Flow</h1>
+<p>This document describes the <code>TimerEngine</code> state machine and the
+<code>FokusService</code> paths that drive it. <code>BREAK</code> means either a short break or the
+long break after the last focus session in a cycle.</p>
+<h2>Engine State Machine</h2>
+
+<div class="mermaid-card">
+  <div class="mermaid-toolbar">
+    <button class="btn-zoom-in" title="Zoom In">+</button>
+    <button class="btn-zoom-out" title="Zoom Out">−</button>
+    <button class="btn-reset" title="Reset Fit">Reset</button>
+  </div>
+  <div class="mermaid-stage" data-code="flowchart TD
+    IDLE[&quot;IDLE\nstateVal = 0\nrunning = false&quot;]
+    FOCUS_RUNNING[&quot;FOCUS running\ndeadline is active&quot;]
+    FOCUS_PAUSED[&quot;FOCUS paused\npausedRemainingMs is stored&quot;]
+    FOCUS_QUEUED[&quot;FOCUS queued\nrunning = false\ncreated by skip with auto-start off&quot;]
+    BREAK_RUNNING[&quot;BREAK running\nshort or long break\ndeadline is active&quot;]
+    BREAK_PAUSED[&quot;BREAK paused\npausedRemainingMs is stored&quot;]
+    BREAK_OVERTIME[&quot;BREAK overtime\nrunning = false\nremaining time is negative&quot;]
+    POSTPONED_FOCUS[&quot;FOCUS after postpone\npostpone deadline is active&quot;]
+
+    IDLE --&gt;|start| FOCUS_RUNNING
+    IDLE --&gt;|unlock + autoStartOnUnlock| FOCUS_RUNNING
+    IDLE --&gt;|pause, skip, postpone, stop, tick| IDLE
+
+    FOCUS_RUNNING --&gt;|tick before deadline| FOCUS_RUNNING
+    FOCUS_RUNNING --&gt;|deadline tick / BREAK_STARTED| BREAK_RUNNING
+    FOCUS_RUNNING --&gt;|pause| FOCUS_PAUSED
+    FOCUS_RUNNING --&gt;|skip| BREAK_RUNNING
+    FOCUS_RUNNING --&gt;|stop| IDLE
+    FOCUS_RUNNING --&gt;|start| FOCUS_RUNNING
+
+    FOCUS_PAUSED --&gt;|start / resume remaining time| FOCUS_RUNNING
+    FOCUS_PAUSED --&gt;|skip| BREAK_RUNNING
+    FOCUS_PAUSED --&gt;|stop| IDLE
+    FOCUS_PAUSED --&gt;|pause, postpone, unlock, tick| FOCUS_PAUSED
+
+    FOCUS_QUEUED --&gt;|start| FOCUS_RUNNING
+    FOCUS_QUEUED --&gt;|skip| BREAK_RUNNING
+    FOCUS_QUEUED --&gt;|stop| IDLE
+    FOCUS_QUEUED --&gt;|pause, postpone, unlock, tick| FOCUS_QUEUED
+
+    BREAK_RUNNING --&gt;|tick before deadline| BREAK_RUNNING
+    BREAK_RUNNING --&gt;|deadline tick + auto-start on / FOCUS_STARTED| FOCUS_RUNNING
+    BREAK_RUNNING --&gt;|deadline tick + auto-start off / BREAK_OVERTIME_STARTED| BREAK_OVERTIME
+    BREAK_RUNNING --&gt;|pause| BREAK_PAUSED
+    BREAK_RUNNING --&gt;|skip + auto-start on| FOCUS_RUNNING
+    BREAK_RUNNING --&gt;|skip + auto-start off| FOCUS_QUEUED
+    BREAK_RUNNING --&gt;|postpone| POSTPONED_FOCUS
+    BREAK_RUNNING --&gt;|stop| IDLE
+    BREAK_RUNNING --&gt;|start| BREAK_RUNNING
+
+    BREAK_PAUSED --&gt;|start / resume remaining time| BREAK_RUNNING
+    BREAK_PAUSED --&gt;|skip + auto-start on| FOCUS_RUNNING
+    BREAK_PAUSED --&gt;|skip + auto-start off| FOCUS_QUEUED
+    BREAK_PAUSED --&gt;|postpone| POSTPONED_FOCUS
+    BREAK_PAUSED --&gt;|stop| IDLE
+    BREAK_PAUSED --&gt;|pause, unlock, tick| BREAK_PAUSED
+
+    BREAK_OVERTIME --&gt;|start| FOCUS_RUNNING
+    BREAK_OVERTIME --&gt;|unlock + autoStartOnUnlock| FOCUS_RUNNING
+    BREAK_OVERTIME --&gt;|skip + auto-start on| FOCUS_RUNNING
+    BREAK_OVERTIME --&gt;|skip + auto-start off| FOCUS_QUEUED
+    BREAK_OVERTIME --&gt;|postpone| POSTPONED_FOCUS
+    BREAK_OVERTIME --&gt;|stop| IDLE
+    BREAK_OVERTIME --&gt;|pause, tick| BREAK_OVERTIME
+
+    POSTPONED_FOCUS --&gt;|tick at postpone deadline / BREAK_STARTED| BREAK_RUNNING
+    POSTPONED_FOCUS --&gt;|pause| FOCUS_PAUSED
+    POSTPONED_FOCUS --&gt;|skip| BREAK_RUNNING
+    POSTPONED_FOCUS --&gt;|stop| IDLE
+    POSTPONED_FOCUS --&gt;|start| POSTPONED_FOCUS"></div>
+</div>
+
+
+<h3>Transition Rules</h3>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Start from idle</td>
+<td>Starts focus session 1.</td>
+</tr>
+<tr>
+<td>Focus deadline expires</td>
+<td>Starts the next break automatically.</td>
+</tr>
+<tr>
+<td>Break deadline expires with auto-start enabled</td>
+<td>Starts the next focus automatically and emits <code>FOCUS_STARTED</code>.</td>
+</tr>
+<tr>
+<td>Break deadline expires with auto-start disabled</td>
+<td>Stops the timer in overtime and emits <code>BREAK_OVERTIME_STARTED</code>.</td>
+</tr>
+<tr>
+<td>Skip during focus</td>
+<td>Starts the current focus session's break immediately.</td>
+</tr>
+<tr>
+<td>Skip during a break with auto-start enabled</td>
+<td>Starts the next focus immediately.</td>
+</tr>
+<tr>
+<td>Skip during a break with auto-start disabled</td>
+<td>Cues the next focus without starting it. <code>start()</code> is required.</td>
+</tr>
+<tr>
+<td>Start during overtime</td>
+<td>Advances to and starts the next focus.</td>
+</tr>
+<tr>
+<td>Postpone during a break or overtime</td>
+<td>Runs the preceding focus for the postpone duration, then returns to the same break.</td>
+</tr>
+<tr>
+<td>Pause while running</td>
+<td>Stores the remaining time and stops countdown; <code>start()</code> resumes it.</td>
+</tr>
+<tr>
+<td>Stop from any active, paused, queued, or overtime state</td>
+<td>Resets to idle and discards the cycle position.</td>
+</tr>
+<tr>
+<td>Screen unlock with auto-start enabled</td>
+<td>Starts focus only from idle or overtime. Running, paused, and queued states are unchanged.</td>
+</tr>
+</tbody>
+</table>
+<p><code>nextState()</code> advances focus to its break and break to its next focus. After
+the long break, the cycle wraps to focus session 1. A focus has an odd
+<code>stateVal</code>; a break has an even <code>stateVal</code>.</p>
+<h2>Service, UI, and Persistence Flow</h2>
+
+<div class="mermaid-card">
+  <div class="mermaid-toolbar">
+    <button class="btn-zoom-in" title="Zoom In">+</button>
+    <button class="btn-zoom-out" title="Zoom Out">−</button>
+    <button class="btn-reset" title="Reset Fit">Reset</button>
+  </div>
+  <div class="mermaid-stage" data-code="flowchart LR
+    CREATE[&quot;FokusService.onCreate&quot;] --&gt; SETTINGS[&quot;Load settings\napply durations and auto-start flags&quot;]
+    SETTINGS --&gt; RESTORE[&quot;Restore saved session&quot;]
+    RESTORE --&gt;|no state, reboot, or older than 1 hour| CLEAR[&quot;Clear saved state&quot;]
+    RESTORE --&gt;|valid state| READY[&quot;Session ready&quot;]
+    CLEAR --&gt; READY
+    READY --&gt; TICK[&quot;250 ms tick loop&quot;]
+    READY --&gt; SETTINGS_FLOW[&quot;Observe settings changes&quot;]
+
+    UI[&quot;Timer screen&quot;] --&gt; ACTION[&quot;start / pause / skip / postpone / stop&quot;]
+    OVERLAY[&quot;Break overlay&quot;] --&gt; ACTION
+    NOTIFICATION[&quot;Notification action&quot;] --&gt; ACTION
+    ACTION --&gt; SERVICE_ACTION[&quot;FokusService dispatches engine command&quot;]
+    SERVICE_ACTION --&gt; STATE_CHANGED[&quot;onStateChanged&quot;]
+
+    TICK --&gt; ENGINE_TICK[&quot;engine.tick()&quot;]
+    ENGINE_TICK --&gt;|no event| PUBLISH[&quot;publish snapshot\nupdate ongoing notification&quot;]
+    ENGINE_TICK --&gt;|BREAK_STARTED, BREAK_OVERTIME_STARTED, or FOCUS_STARTED| EVENT[&quot;Post event notification&quot;]
+    EVENT --&gt; STATE_CHANGED
+
+    UNLOCK[&quot;ACTION_USER_PRESENT&quot;] --&gt; UNLOCK_SETTING{&quot;autoStartOnUnlock?&quot;}
+    UNLOCK_SETTING --&gt;|no| NO_UNLOCK[&quot;No action&quot;]
+    UNLOCK_SETTING --&gt;|yes| ENGINE_UNLOCK[&quot;engine.onScreenUnlocked()&quot;]
+    ENGINE_UNLOCK --&gt;|false: running, paused, or queued| NO_UNLOCK
+    ENGINE_UNLOCK --&gt;|true: idle or overtime| STATE_CHANGED
+
+    STATE_CHANGED --&gt; PUBLISH
+    STATE_CHANGED --&gt; OVERLAY_RULE{&quot;Break and running or overtime?&quot;}
+    OVERLAY_RULE --&gt;|yes| SHOW_OVERLAY[&quot;Show break overlay&quot;]
+    OVERLAY_RULE --&gt;|no| HIDE_OVERLAY[&quot;Hide break overlay&quot;]
+    STATE_CHANGED --&gt; SAVE[&quot;Persist state, wall-clock deadline, and flags&quot;]
+
+    SETTINGS_FLOW --&gt; APPLY[&quot;Apply durations and auto-start flags&quot;]
+    APPLY --&gt; PUBLISH"></div>
+</div>
+
+
+<p>The service persists the deadline rather than only the remaining time, so
+elapsed wall-clock time continues to count while the process is stopped. The
+tick loop starts only after settings and session restoration are complete.</p>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: false, htmlLabels: true }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const stages = document.querySelectorAll('.mermaid-stage');
+
+      for (let i = 0; i < stages.length; i++) {
+        const stage = stages[i];
+        const rawCode = stage.getAttribute('data-code');
+        const container = stage.closest('.mermaid-card');
+
+        try {
+          const { svg } = await mermaid.render('mermaid-svg-' + i, rawCode);
+          stage.innerHTML = svg;
+
+          const svgElement = stage.querySelector('svg');
+          if (svgElement) {
+            const panZoom = svgPanZoom(svgElement, {
+              zoomEnabled: true,
+              controlIconsEnabled: false,
+              fit: true,
+              center: true,
+              minZoom: 0.1,
+              maxZoom: 15
+            });
+
+            const zoomInBtn = container.querySelector('.btn-zoom-in');
+            const zoomOutBtn = container.querySelector('.btn-zoom-out');
+            const resetBtn = container.querySelector('.btn-reset');
+
+            if (zoomInBtn) zoomInBtn.addEventListener('click', () => panZoom.zoomIn());
+            if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => panZoom.zoomOut());
+            if (resetBtn) resetBtn.addEventListener('click', () => {
+              panZoom.reset();
+              panZoom.fit();
+              panZoom.center();
+            });
+          }
+        } catch (err) {
+          stage.innerHTML = `<pre style="color: #ff7b72; padding: 16px;">Failed to render diagram:\n${err.message}</pre>`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

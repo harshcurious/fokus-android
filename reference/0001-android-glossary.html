@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Android Glossary — Fokus lessons</title>
+  <link rel="stylesheet" href="../assets/fokus.css">
+</head>
+<body>
+  <main class="lesson">
+    <header class="masthead">
+      <p class="series">Fokus lessons · Reference 0001</p>
+      <h1>Android &amp; Kotlin Glossary</h1>
+      <p class="subtitle">The vocabulary used across the fokus-android repo, in one printable page. Each term notes where it lives in the repo.</p>
+    </header>
+
+    <p>This is the shared glossary for every lesson in this course. When a lesson introduces a term, it links here. New terms are added here as lessons introduce them.</p>
+
+    <h2>The app &amp; the build</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>Gradle</td><td>The build system. `build.gradle.kts` scripts compile, package, and sign the app. Config is centralized in <code>gradle/libs.versions.toml</code> (a "version catalog").</td></tr>
+      <tr><td>version catalog</td><td><code>libs.versions.toml</code> — one place listing every dependency and plugin version, referenced as <code>libs.androidx.compose.material3</code> etc.</td></tr>
+      <tr><td>namespace / applicationId</td><td><code>namespace</code> = Kotlin package root (<code>dev.fokus.app</code>); <code>applicationId</code> = unique install identity on the device.</td></tr>
+      <tr><td>minSdk / targetSdk / compileSdk</td><td>minSdk = oldest Android version supported (24 = Android 7.0); targetSdk = version your app is validated against; compileSdk = API level you compile against (36).</td></tr>
+      <tr><td>Compose BOM</td><td>Bill of Materials — one version that pins all Compose library versions together so they stay compatible.</td></tr>
+    </table>
+
+    <h2>Platform components (the four entry points)</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>AndroidManifest.xml</td><td>The app's declaration to the OS: which components exist, what permissions they need, and what they can be started with. If a component isn't declared here, the system can't run it.</td></tr>
+      <tr><td>Activity</td><td>One screen the user interacts with. This app has exactly one (<code>MainActivity</code>), a "single-activity" app — screens are Compose destinations, not more Activities.</td></tr>
+      <tr><td>Service</td><td>Background work with no UI. <code>FokusService</code> owns the timer engine, notification, and overlay. "Foreground service" = must show a persistent notification so the user always knows it's running.</td></tr>
+      <tr><td>BroadcastReceiver</td><td>A listener for system-wide events delivered as Intents. <code>BootReceiver</code> restarts the service after reboot.</td></tr>
+      <tr><td>ContentProvider</td><td>Shares app data with other apps. Not used in fokus — listed here so you recognize it.</td></tr>
+      <tr><td>Intent</td><td>An asynchronous message describing an action; the OS uses it to start activities, services, and receivers. Here intents carry action strings like <code>ACTION_START</code> to the service.</td></tr>
+      <tr><td>PendingIntent</td><td>A permission token for "do this later on my behalf" — used by notification buttons so the service/activity can be triggered even when the app isn't running.</td></tr>
+      <tr><td>intent-filter</td><td>A manifest declaration of what intents a component accepts (e.g. <code>MAIN</code>/<code>LAUNCHER</code> makes MainActivity the launcher screen).</td></tr>
+      <tr><td>Permission</td><td>System-granted capability (e.g. <code>POST_NOTIFICATIONS</code>, <code>SYSTEM_ALERT_WINDOW</code>). Declared in the manifest; some must also be requested at runtime from the user.</td></tr>
+    </table>
+
+    <h2>Architecture &amp; state</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>Layer</td><td>A slice of the app with one job: UI (Compose), state holders (ViewModel), and data/business logic (engine + repository). Fokus follows the official "layered" guidance.</td></tr>
+      <tr><td>Unidirectional data flow</td><td>Events flow one way (UI → logic), state flows back the other way (logic → UI). The UI never mutates state directly.</td></tr>
+      <tr><td>Single source of truth</td><td>One owner for each piece of state. In fokus, <code>TimerEngine</code> owns all timer state; nothing else stores a copy.</td></tr>
+      <tr><td>ViewModel</td><td>A state holder that survives configuration changes (rotation) and exposes state to the UI. <code>TimerViewModel</code> bridges UI and service.</td></tr>
+      <tr><td>AndroidViewModel</td><td>A ViewModel that receives the <code>Application</code> context, used when you need context (e.g. to bind a service).</td></tr>
+      <tr><td>Snapshot</td><td>An immutable description of the state at one instant. <code>TimerEngine.Snapshot</code> carries phase, running, remaining time, progress.</td></tr>
+      <tr><td>StateFlow</td><td>A reactive value holder: readers always get the latest value, and it replays the current value to new readers. The service exposes <code>state: StateFlow&lt;Snapshot&gt;</code>.</td></tr>
+      <tr><td>MutableStateFlow</td><td>The writable side of a StateFlow; only the owner writes to it (<code>_state</code>), others read the immutable <code>state</code>.</td></tr>
+      <tr><td>Flow</td><td>A cold stream of values, like a reactive iterable. Settings are exposed as a <code>Flow&lt;AppSettings&gt;</code> that emits on every change.</td></tr>
+    </table>
+
+    <h2>Jetpack Compose</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>Composable</td><td>A function annotated <code>@Composable</code> that describes UI. Think "UI as a function of state".</td></tr>
+      <tr><td>Recomposition</td><td>When the state a composable reads changes, Compose re-runs it to produce new UI. This is how screens update themselves.</td></tr>
+      <tr><td>collectAsState</td><td>Converts a Flow/StateFlow into Compose state; the composable recomposes whenever a new value arrives.</td></tr>
+      <tr><td>remember</td><td>Holds a value across recompositions so it isn't recomputed every time.</td></tr>
+      <tr><td>Scaffold</td><td>A standard app frame: top app bar, content area with padding. Used in <code>TimerScreen</code> and settings.</td></tr>
+      <tr><td>Modifier</td><td>Chained layout/styling parameters on a composable: <code>Modifier.fillMaxSize().padding(24.dp)</code>.</td></tr>
+      <tr><td>MaterialTheme / FokusTheme</td><td>Global colors/typography. The app wraps everything in its own <code>FokusTheme</code> (theme package).</td></tr>
+    </table>
+
+    <h2>Concurrency (coroutines)</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>Coroutine</td><td>A suspendable computation — like a thread but cheap and structured. The service runs one forever to tick the timer.</td></tr>
+      <tr><td>CoroutineScope</td><td>The lifetime container for coroutines; cancelling the scope cancels its work. <code>FokusService</code> owns a scope cancelled in <code>onDestroy</code>.</td></tr>
+      <tr><td>SupervisorJob</td><td>A job that isolates failures: one child coroutine failing doesn't cancel siblings.</td></tr>
+      <tr><td>Dispatchers</td><td>Which thread a coroutine runs on — <code>Main</code> (UI), <code>IO</code> (disk/network), <code>Default</code> (CPU).</td></tr>
+      <tr><td>delay</td><td>Suspends the coroutine without blocking the thread. The service ticks every 250&nbsp;ms using <code>delay(250)</code>.</td></tr>
+      <tr><td>collect</td><td>Suspends, consuming each emitted value of a Flow/StateFlow (e.g. the service collecting settings changes).</td></tr>
+    </table>
+
+    <h2>Persistence</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>DataStore</td><td>Modern async key-value storage. <code>SettingsRepository</code> wraps a Preferences DataStore named "settings".</td></tr>
+      <tr><td>Preferences key</td><td>A typed key like <code>intPreferencesKey("focus_minutes")</code> that DataStore reads/writes.</td></tr>
+      <tr><td>SharedPreferences</td><td>Older, synchronous key-value storage. Used here only for the session snapshot (<code>"session"</code>) so the timer survives process death.</td></tr>
+      <tr><td>deadline-based countdown</td><td>Store <em>when</em> a session ends (wall-clock), not how much time is left, so a killed process still counts correctly. Sessions older than an hour or pre-reboot are discarded.</td></tr>
+    </table>
+
+    <h2>Service wiring &amp; system bits</h2>
+    <table class="glossary">
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>Bound service</td><td>A service another component connects to for an API. The UI binds to <code>FokusService</code> via a <code>Binder</code> to call start/pause/skip.</td></tr>
+      <tr><td>Binder</td><td>The local interface object passed over a <code>ServiceConnection</code>; <code>FokusService.LocalBinder</code> hands back the service instance.</td></tr>
+      <tr><td>ServiceConnection</td><td>Callback pair (<code>onServiceConnected</code> / <code>onServiceDisconnected</code>) used with <code>bindService</code>.</td></tr>
+      <tr><td>START_STICKY</td><td>Return value from <code>onStartCommand</code> telling the OS to restart the service after it's killed (if there's work to resume).</td></tr>
+      <tr><td>Lifecycle / LifecycleOwner</td><td>The state machine of a component (created → started → resumed → … → destroyed). Compose observes it to react to app lifecycle events.</td></tr>
+      <tr><td>WindowManager overlay</td><td>A window drawn over other apps. <code>OverlayController</code> renders the break overlay via a <code>ComposeView</code> added with <code>TYPE_APPLICATION_OVERLAY</code>.</td></tr>
+      <tr><td>SystemClock.elapsedRealtime</td><td>Monotonic clock that counts even in deep sleep; used to detect reboots (it resets to 0).</td></tr>
+      <tr><td>Clock injection</td><td>Passing <code>() -&gt; Long</code> as the "now" source so <code>TimerEngine</code> is testable with a fake clock — zero Android dependencies.</td></tr>
+      <tr><td>Navigation 3</td><td>Jetpack's newest navigation library. Routes are typed keys (<code>Timer</code>, <code>Settings</code>), composed with <code>NavDisplay</code> + <code>entryProvider</code> and a back stack.</td></tr>
+    </table>
+
+    <nav class="lesson-nav">
+      <a href="../lessons/0001-the-map-of-the-app.html">← Lesson 0001: The map of the app</a>
+      <span class="muted">Reference 0001</span>
+    </nav>
+
+    <footer class="footer">
+      Fokus lessons · Android glossary. Terms are added as lessons introduce them.
+    </footer>
+  </main>
+</body>
+</html>
